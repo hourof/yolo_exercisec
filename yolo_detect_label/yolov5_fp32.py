@@ -127,6 +127,7 @@ class YOLOv7:
         return boxes
 
     def draw_detections(self, image, boxes, scores, class_ids):
+        img_list  = []
         for box, score, class_id in zip(boxes, scores, class_ids):
             x1, y1, w, h = box.astype(int)
 
@@ -134,13 +135,15 @@ class YOLOv7:
             cv2.rectangle(image, (x1, y1), (x1 + w, y1 + h), (0, 0, 255), thickness=2)
             # x1,y1是图像左上角坐标,x2,y2是图像右下角坐标
             x2, y2 = x1 + w, y1 +h
+            img_list.append([class_id,x1,y1, x2, y2])
             label = self.class_names[class_id]
             label = f'{label} {int(score * 100)}%'
             labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
             # top = max(y1, labelSize[1])
             # cv.rectangle(frame, (left, top - round(1.5 * labelSize[1])), (left + round(1.5 * labelSize[0]), top + baseLine), (255,255,255), cv.FILLED)
             cv2.putText(image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), thickness=2)
-        return image, x1,y1,x2,y2,class_id
+
+        return image, img_list
 
 
 if __name__ == '__main__':
@@ -174,42 +177,49 @@ if __name__ == '__main__':
     # 确保有label文件存在,如果没有就创建
     print(images_list)
     os.makedirs("label", exist_ok=True)
+    for images_name in images_list:
+        txt_path = os.path.join("label", images_name.replace("jpg", "txt"))
+        # 创建空的字符串
+        with open(txt_path, "w", ) as f:
+            f.write("")
+
     # 为每张图像创建一个txt文件
     label_list = []
     #依次读取图像
     for index,item in enumerate(images_list):
-        print(index)
+        #print(index)
         img_path = os.path.join("images", images_list[index])
         srcimg = cv2.imread(img_path)
         # Detect Objects
         boxes, scores, class_ids = yolov7_detector.detect(srcimg)
         # Draw detections2
-        dstimg, x1, y1, x2, y2, class_id = yolov7_detector.draw_detections(srcimg, boxes, scores, class_ids)
+        dstimg, images = yolov7_detector.draw_detections(srcimg, boxes, scores, class_ids)
         height, width, _ = dstimg.shape
-        # 归一化后数据
-        x_center = round(((x1 + x2) / 2) / width, 6)  # 归一化 X 轴中心点
-        y_center = round(((y1 + y2) / 2) / height, 6)  # 归一化 Y 轴中心点
-        w_norm = round((x2 - x1) / width, 6)  # 归一化目标宽度
-        h_norm = round((y2 - y1) / height, 6)  # 归一化目标高度
+        for item in images:
+            print("数据",item)
+            class_id , x1, y1, x2, y2 = item
+            # 归一化后数据
+            x_center = round(((x1 + x2) / 2) / width, 6)  # 归一化 X 轴中心点
+            y_center = round(((y1 + y2) / 2) / height, 6)  # 归一化 Y 轴中心点
+            w_norm = round((x2 - x1) / width, 6)  # 归一化目标宽度
+            h_norm = round((y2 - y1) / height, 6)  # 归一化目标高度
 
-        # for images_name in images_list:
-        #     txt_path = os.path.join("label", images_name.replace("jpg", "txt"))
-        #     # 创建空的字符串
-        #     with open(txt_path, "w", ) as f:
-        #         f.write("")
-        #         # 去掉图像路径
-        #         label_list.append(f.name)
-        for a in os.listdir("label"):
-            label_list.append(a)
-        print(label_list[index])
-        label_txt = os.path.join("label", label_list[index])
-        with open(label_txt, 'w', encoding='utf-8') as f:
-            print(f"f时什么",f)
-            f.write(f"{class_id} {x_center} {y_center} {w_norm} {h_norm} ")
+            # for images_name in images_list:
+            #     txt_path = os.path.join("label", images_name.replace("jpg", "txt"))
+            #     # 创建空的字符串
+            #     with open(txt_path, "w", ) as f:
+            #         f.write("")
+            #         # 去掉图像路径
+            #         label_list.append(f.name)
+            for a in os.listdir("label"):
+                label_list.append(a)
+            #print(label_list[index])
+            label_txt = os.path.join("label", label_list[index])
+            with open(label_txt, 'a', encoding='utf-8') as f:
+                f.write(f"{class_id} {x_center} {y_center} {w_norm} {h_norm}\n")
 
 
-    winName = 'Deep learning object detection in ONNXRuntime'
-    cv2.namedWindow(winName, 0)
-    cv2.imshow(winName, dstimg)
+
+    cv2.imshow("img", dstimg)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
