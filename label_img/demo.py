@@ -1,10 +1,10 @@
 import cv2
-img = cv2.imread("bus.jpg")
+img = cv2.imread("1.jpg")
 #获取图像得高度和宽和和通道数
 height, width, _ = img.shape
 
 #读取图像得标签信息
-with open("bus.txt", "r", encoding="utf-8") as f:
+with open("1.txt", "r", encoding="utf-8") as f:
     #图像得id(标签)
     #0.358025 0.587963 图像中心的归一化后得x,y坐标
     #0.113580 0.425926 这两个数据是图像归一化后得宽高
@@ -14,7 +14,7 @@ with open("bus.txt", "r", encoding="utf-8") as f:
     object = [item.strip().split() for item in yolo_data]
     #print(object)
 #读取图像得标签类别
-with open("classes.txt", "r", encoding="utf-8") as f:
+with open("best.names", "r", encoding="utf-8") as f:
     class_list = f.readlines()
     class_list = [item.strip() for item in class_list]
     print(class_list)
